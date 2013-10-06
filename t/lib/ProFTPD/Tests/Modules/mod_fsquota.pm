@@ -17,7 +17,13 @@ $| = 1;
 my $order = 0;
 
 my $TESTS = {
-  fsquota_displayconnect => {
+  fsquota_off_displayconnect => {
+    order => ++$order,
+    test_class => [qw(forking)],
+  },
+
+  fsquota_on_displayconnect => {
+    order => ++$order,
     test_class => [qw(forking)],
   },
 
@@ -28,10 +34,13 @@ sub new {
 }
 
 sub list_tests {
-  return testsuite_get_runnable_tests($TESTS);
+#  return testsuite_get_runnable_tests($TESTS);
+  return qw(
+    fsquota_off_displayconnect
+  );
 }
 
-sub fsquota_displayconnect {
+sub fsquota_off_displayconnect {
   my $self = shift;
   my $tmpdir = $self->{tmpdir};
 
@@ -67,6 +76,25 @@ sub fsquota_displayconnect {
     '/bin/bash');
   auth_group_write($auth_group_file, $group, $gid, $user);
 
+  my $connect_file = File::Spec->rel2abs("$tmpdir/connect.txt");
+  if (open(my $fh, "> $connect_file")) {
+    print $fh <<EOD;
+            %{fsquota.user.enabled}
+User quota: %{fsquota.user.enabled}
+  Bytes: %{fsquota.user.kb.used} of %{fsquota.user.kb.total}
+  Files: %{fsquota.user.files.used} of %{fsquota.user.files.total}
+Group quota: %{fsquota.group.enabled}
+  Bytes: %{fsquota.group.kb.used} of %{fsquota.group.kb.total}
+  Files: %{fsquota.group.files.used} of %{fsquota.group.files.total}
+EOD
+    unless (close($fh)) {
+      die("Can't write $connect_file: $!");
+    }
+
+  } else {
+    die("Can't open $connect_file: $!");
+  }
+
   my $config = {
     PidFile => $pid_file,
     ScoreboardFile => $scoreboard_file,
@@ -80,7 +108,9 @@ sub fsquota_displayconnect {
 
     IfModules => {
       'mod_fsquota.c' => {
-        FSQuotaEngine => 'on',
+        FSQuotaEngine => 'off',
+
+        DisplayConnect => $connect_file,
       },
 
       'mod_delay.c' => {
@@ -110,6 +140,7 @@ sub fsquota_displayconnect {
 
       my $resp_code = $client->response_code();
       my $resp_msg = $client->response_msg();
+      my $resp_msgs = $client->response_msgs();
 
       $client->quit();
 
@@ -118,6 +149,9 @@ sub fsquota_displayconnect {
       $expected = 220;
       $self->assert($expected == $resp_code,
         test_msg("Expected response code $expected, got $resp_code"));
+
+use Data::Dumper;
+print STDERR "msgs:\n", Dumper($resp_msgs), "\n";
 
       $expected = 'Real Server';
       $self->assert(qr/$expected/, $resp_msg,

@@ -493,93 +493,96 @@ static int fsquota_sess_init(void) {
   config_rec *c;
   int res;
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.user.enabled}",
+  fsquota_pool = make_sub_pool(session.pool);
+  pr_pool_tag(fsquota_pool, MOD_FSQUOTA_VERSION);
+
+  res = pr_var_set(fsquota_pool, "%{fsquota.user.enabled}",
     "User quotas enabled", PR_VAR_TYPE_FUNC,
     (void *) fsquota_user_enabled_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.user.enabled} variable: %s",
+      "error registering %%{fsquota.user.enabled} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.user.kb.limit}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.user.kb.total}",
     "Maximum number of KB on disk for user", PR_VAR_TYPE_FUNC,
     (void *) fsquota_user_total_kb_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.user.kb.limit} variable: %s",
+      "error registering %%{fsquota.user.kb.total} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.user.kb.used}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.user.kb.used}",
     "Current number of KB on disk for user", PR_VAR_TYPE_FUNC,
     (void *) fsquota_user_used_kb_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.user.kb.used} variable: %s",
+      "error registering %%{fsquota.user.kb.used} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.user.files.limit}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.user.files.total}",
     "Maximum number of files on disk for user", PR_VAR_TYPE_FUNC,
     (void *) fsquota_user_total_files_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.user.files.limit} variable: %s",
+      "error registering %%{fsquota.user.files.total} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.user.files.used}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.user.files.used}",
     "Current number of files on disk for user", PR_VAR_TYPE_FUNC,
     (void *) fsquota_user_used_files_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.user.files.used} variable: %s",
+      "error registering %%{fsquota.user.files.used} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.group.enabled}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.group.enabled}",
     "Group quotas enabled", PR_VAR_TYPE_FUNC,
     (void *) fsquota_group_enabled_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.group.enabled} variable: %s",
+      "error registering %%{fsquota.group.enabled} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.group.kb.limit}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.group.kb.total}",
     "Maximum number of KB on disk for group", PR_VAR_TYPE_FUNC,
     (void *) fsquota_group_total_kb_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.group.kb.limit} variable: %s",
+      "error registering %%{fsquota.group.kb.total} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.group.kb.used}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.group.kb.used}",
     "Current number of KB on disk for group", PR_VAR_TYPE_FUNC,
     (void *) fsquota_group_used_kb_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.group.kb.used} variable: %s",
+      "error registering %%{fsquota.group.kb.used} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.group.files.limit}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.group.files.total}",
     "Maximum number of files on disk for group", PR_VAR_TYPE_FUNC,
     (void *) fsquota_group_total_files_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.group.files.limit} variable: %s",
+      "error registering %%{fsquota.group.files.total} variable: %s",
       strerror(errno));
   }
 
-  res = pr_var_set(fsquota_pool, "%{mod_fsquota.group.files.used}",
+  res = pr_var_set(fsquota_pool, "%{fsquota.group.files.used}",
     "Current number of files on disk for group", PR_VAR_TYPE_FUNC,
     (void *) fsquota_group_used_files_str, NULL, 0);
   if (res < 0) {
     pr_trace_msg(trace_channel, 8,
-      "error registering %%{mod_fsquota.group.files.used} variable: %s",
+      "error registering %%{fsquota.group.files.used} variable: %s",
       strerror(errno));
   }
 
@@ -589,6 +592,9 @@ static int fsquota_sess_init(void) {
   }
 
   if (fsquota_engine == FALSE) {
+    destroy_pool(fsquota_pool);
+    fsquota_pool = NULL;
+
     return 0;
   }
 
@@ -603,9 +609,6 @@ static int fsquota_sess_init(void) {
 
     c = find_config_next(c, c->next, CONF_PARAM, "FSQuotaOptions", FALSE);
   }
-
-  fsquota_pool = make_sub_pool(session.pool);
-  pr_pool_tag(fsquota_pool, MOD_FSQUOTA_VERSION);
 
   return 0;
 }
