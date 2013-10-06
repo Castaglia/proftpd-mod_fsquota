@@ -11,8 +11,8 @@ SHARED_LDFLAGS=-avoid-version -export-dynamic -module
 VPATH=@srcdir@
 
 MODULE_NAME=mod_fsquota
-MODULE_OBJS=mod_fsquota.o quota.o
-SHARED_MODULE_OBJS=mod_fsquota.lo quota.lo
+MODULE_OBJS=mod_fsquota.o fsquota.o
+SHARED_MODULE_OBJS=mod_fsquota.lo fsquota.lo
 
 # Necessary redefinitions
 INCLUDES=-I. -I../.. -I../../include @INCLUDES@
