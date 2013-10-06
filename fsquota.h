@@ -48,10 +48,13 @@
 #define MOD_FSQUOTA_FSQUOTA_H
 
 int fsquota_group_enabled(const char *path, gid_t gid, int *enabled);
-int fsquota_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
-  uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used);
+
+int fsquota_group_get(const char *path, gid_t gid, uint64_t *kb_total,
+  uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used);
+
 int fsquota_user_enabled(const char *path, uid_t uid, int *enabled);
-int fsquota_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
-  uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used);
+
+int fsquota_user_get(const char *path, uid_t uid, uint64_t *kb_total,
+  uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used);
 
 #endif /* MOD_FSQUOTA_FSQUOTA_H */

@@ -49,8 +49,8 @@ static int linux_user_enabled(const char *path, uid_t uid, int *enabled) {
   return res;
 }
 
-static int linux_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+static int linux_user_get(const char *path, uid_t uid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res;
   struct stat st;
   struct dqblk dq;
@@ -70,13 +70,23 @@ static int linux_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
   res = quotactl(QCMD(Q_GETQUOTA, USRQUOTA), path, uid, &dq);
   if (res == 0) {
     if (dq.dqb_valid & QIF_BLIMITS) {
-      *kb_avail = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
-      *kb_used = ((dq.dqb_curspace * st.st_blksize) / 1024);
+      if (kb_total != NULL) {
+        *kb_total = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
+      }
+
+      if (kb_used != NULL) {
+        *kb_used = ((dq.dqb_curspace * st.st_blksize) / 1024);
+      }
     }
 
     if (dq.dqb_valid & QIF_INODES) {
-      *file_avail = (uint64_t) dq.dqb_isoftlimit;
-      *file_used = (uint64_t) dq.dqb_curinodes;
+      if (file_total != NULL) {
+        *file_total = (uint64_t) dq.dqb_isoftlimit;
+      }
+
+      if (file_used != NULL) {
+        *file_used = (uint64_t) dq.dqb_curinodes;
+      }
     }
 
   } else {
@@ -113,8 +123,8 @@ static int linux_group_enabled(const char *path, gid_t gid, int *enabled) {
   return res;
 }
 
-static int linux_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+static int linux_group_get(const char *path, gid_t gid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res;
   struct stat st;
   struct dqblk dq;
@@ -134,13 +144,23 @@ static int linux_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
   res = quotactl(QCMD(Q_GETQUOTA, GRPQUOTA), path, gid, &dq);
   if (res == 0) {
     if (dq.dqb_valid & QIF_BLIMITS) {
-      *kb_avail = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
-      *kb_used = ((dq.dqb_curspace * st.st_blksize) / 1024);
+      if (kb_total != NULL) {
+        *kb_total = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
+      }
+
+      if (kb_used != NULL) {
+        *kb_used = ((dq.dqb_curspace * st.st_blksize) / 1024);
+      }
     }
 
     if (dq.dqb_valid & QIF_INODES) {
-      *file_avail = (uint64_t) dq.dqb_isoftlimit;
-      *file_used = (uint64_t) dq.dqb_curinodes;
+      if (file_total != NULL) {
+        *file_total = (uint64_t) dq.dqb_isoftlimit;
+      }
+
+      if (file_used != NULL) {
+        *file_used = (uint64_t) dq.dqb_curinodes;
+      }
     }
 
   } else {
@@ -164,8 +184,8 @@ static int freebsd_user_enabled(const char *path, uid_t uid, int *enabled) {
   return -1;
 }
 
-static int freebsd_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+static int freebsd_user_get(const char *path, uid_t uid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res;
   struct stat st;
   struct dqblk dq;
@@ -184,10 +204,21 @@ static int freebsd_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
 
   res = quotactl(path, QCMD(Q_GETQUOTA, USRQUOTA), uid, &dq);
   if (res == 0) {
-    *kb_avail = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
-    *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
-    *file_avail = (uint64_t) dq.dqb_isoftlimit;
-    *file_used = (uint64_t) dq.dqb_curinodes;
+    if (kb_total != NULL) {
+      *kb_total = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
+    }
+
+    if (kb_used != NULL) {
+      *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
+    }
+
+    if (file_total != NULL) {
+      *file_total = (uint64_t) dq.dqb_isoftlimit;
+    }
+
+    if (file_used != NULL) {
+      *file_used = (uint64_t) dq.dqb_curinodes;
+    }
 
   } else {
     int xerrno = xerrno;
@@ -207,8 +238,8 @@ static int freebsd_group_enabled(const char *path, gid_t gid, int *enabled) {
   return -1;
 }
 
-static int freebsd_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+static int freebsd_group_get(const char *path, gid_t gid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res;
   struct stat st;
   struct dqblk dq;
@@ -227,10 +258,21 @@ static int freebsd_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
 
   res = quotactl(path, QCMD(Q_GETQUOTA, GRPQUOTA), gid, &dq);
   if (res == 0) {
-    *kb_avail = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
-    *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
-    *file_avail = (uint64_t) dq.dqb_isoftlimit;
-    *file_used = (uint64_t) dq.dqb_curinodes;
+    if (kb_total != NULL) {
+      *kb_total = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
+    }
+
+    if (kb_used != NULL) {
+      *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
+    }
+
+    if (file_total != NULL) {
+      *file_total = (uint64_t) dq.dqb_isoftlimit;
+    }
+
+    if (file_used != NULL) {
+      *file_used = (uint64_t) dq.dqb_curinodes;
+    }
 
   } else {
     int xerrno = xerrno;
@@ -273,17 +315,28 @@ static int darwin_user_enabled(const char *path, uid_t uid, int *enabled) {
   return res;
 }
 
-static int darwin_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+static int darwin_user_get(const char *path, uid_t uid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res;
   struct dqblk dq;
 
   res = quotactl(path, QCMD(Q_GETQUOTA, USRQUOTA), uid, (void *) &dq);
   if (res == 0) {
-    *kb_avail = (dq.dqb_bsoftlimit / 1024);
-    *kb_used = (dq.dqb_curbytes / 1024);
-    *file_avail = (uint64_t) dq.dqb_isoftlimit;
-    *file_used = (uint64_t) dq.dqb_curinodes;
+    if (kb_total != NULL) {
+      *kb_total = (dq.dqb_bsoftlimit / 1024);
+    }
+
+    if (kb_used != NULL) {
+      *kb_used = (dq.dqb_curbytes / 1024);
+    }
+
+    if (file_total != NULL) {
+      *file_total = (uint64_t) dq.dqb_isoftlimit;
+    }
+
+    if (file_used != NULL) {
+      *file_used = (uint64_t) dq.dqb_curinodes;
+    }
 
   } else {
     int xerrno = xerrno;
@@ -323,17 +376,28 @@ static int darwin_group_enabled(const char *path, gid_t gid, int *enabled) {
   return res;
 }
 
-static int darwin_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+static int darwin_group_get(const char *path, gid_t gid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res;
   struct dqblk dq;
 
   res = quotactl(path, QCMD(Q_GETQUOTA, GRPQUOTA), gid, (void *) &dq);
   if (res == 0) {
-    *kb_avail = (dq.dqb_bsoftlimit / 1024);
-    *kb_used = (dq.dqb_curbytes / 1024);
-    *file_avail = (uint64_t) dq.dqb_isoftlimit;
-    *file_used = (uint64_t) dq.dqb_curinodes;
+    if (kb_total != NULL) {
+      *kb_total = (dq.dqb_bsoftlimit / 1024);
+    }
+
+    if (kb_used != NULL) {
+      *kb_used = (dq.dqb_curbytes / 1024);
+    }
+
+    if (file_total != NULL) {
+      *file_total = (uint64_t) dq.dqb_isoftlimit;
+    }
+
+    if (file_used != NULL) {
+      *file_used = (uint64_t) dq.dqb_curinodes;
+    }
 
   } else {
     int xerrno = xerrno;
@@ -355,8 +419,8 @@ static int solaris_user_enabled(const char *path, uid_t uid, int *enabled) {
   return -1;
 }
 
-static int solaris_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+static int solaris_user_get(const char *path, uid_t uid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res, fd;
   struct stat st;
   struct dqblk dq;
@@ -391,10 +455,21 @@ static int solaris_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
 
   res = ioctl(fd, Q_QUOTACTL, &qctl);
   if (res == 0) {
-    *kb_avail = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
-    *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
-    *file_avail = (uint64_t) dq.dqb_fsoftlimit;
-    *file_used = (uint64_t) dq.dqb_curfiles;
+    if (kb_total != NULL) {
+      *kb_total = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
+    }
+
+    if (kb_used != NULL) {
+      *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
+    }
+
+    if (file_total != NULL) {
+      *file_total = (uint64_t) dq.dqb_fsoftlimit;
+    }
+
+    if (file_used != NULL) {
+      *file_used = (uint64_t) dq.dqb_curfiles;
+    }
 
   } else {
     int xerrno = xerrno;
@@ -416,8 +491,8 @@ static int solaris_group_enabled(const char *path, gid_t gid, int *enabled) {
   return -1;
 }
 
-static int solaris_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+static int solaris_group_get(const char *path, gid_t gid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   /* Solaris doesn't support group quotas. */
   errno = ENOSYS;
   return -1;
@@ -482,22 +557,22 @@ int fsquota_group_enabled(const char *path, gid_t gid, int *enabled) {
   return res;
 }
 
-int fsquota_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+int fsquota_user_get(const char *path, uid_t uid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res = -1;
 
 #if defined(LINUX)
-  res = linux_user_get(path, uid, kb_avail, kb_used, file_avail, file_used);
+  res = linux_user_get(path, uid, kb_total, kb_used, file_total, file_used);
 
 #elif defined(FREEBSD7) || defined(FREEBSD8) || defined(FREEBSD9) || \
       defined(FREEBSD10)
-  res = freebsd_user_get(path, uid, kb_avail, kb_used, file_avail, file_used);
+  res = freebsd_user_get(path, uid, kb_total, kb_used, file_total, file_used);
 
 #elif defined(DARWIN9) || defined(DARWIN10) || defined(DARWIN11)
-  res = darwin_user_get(path, uid, kb_avail, kb_used, file_avail, file_used);
+  res = darwin_user_get(path, uid, kb_total, kb_used, file_total, file_used);
 
 #elif defined(SOLARIS2)
-  res = solaris_user_get(path, uid, kb_avail, kb_used, file_avail, file_used);
+  res = solaris_user_get(path, uid, kb_total, kb_used, file_total, file_used);
 
 #else
   pr_trace_msg(trace_channel, 3,
@@ -511,22 +586,22 @@ int fsquota_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
   return res;
 }
 
-int fsquota_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
-    uint64_t *kb_used, uint64_t *file_avail, uint64_t *file_used) {
+int fsquota_group_get(const char *path, gid_t gid, uint64_t *kb_total,
+    uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
   int res = -1;
 
 #if defined(LINUX)
-  res = linux_group_get(path, gid, kb_avail, kb_used, file_avail, file_used);
+  res = linux_group_get(path, gid, kb_total, kb_used, file_total, file_used);
 
 #elif defined(FREEBSD7) || defined(FREEBSD8) || defined(FREEBSD9) || \
       defined(FREEBSD10)
-  res = freebsd_group_get(path, gid, kb_avail, kb_used, file_avail, file_used);
+  res = freebsd_group_get(path, gid, kb_total, kb_used, file_total, file_used);
 
 #elif defined(DARWIN9) || defined(DARWIN10) || defined(DARWIN11)
-  res = darwin_group_get(path, gid, kb_avail, kb_used, file_avail, file_used);
+  res = darwin_group_get(path, gid, kb_total, kb_used, file_total, file_used);
 
 #elif defined(SOLARIS2)
-  res = solaris_group_get(path, gid, kb_avail, kb_used, file_avail, file_used);
+  res = solaris_group_get(path, gid, kb_total, kb_used, file_total, file_used);
 
 #else
   pr_trace_msg(trace_channel, 3,
