@@ -31,9 +31,6 @@
 module fsquota_module;
 
 static int fsquota_engine = FALSE;
-static int fsquota_logfd = -1;
-static pool *fsquota_pool = NULL;
-static unsigned long fsquota_opts = 0UL;
 
 static const char *trace_channel = "fsquota";
 
@@ -73,13 +70,6 @@ static int fsquota_sess_init(void) {
     fsquota_engine = *((int *) c->argv[0]);
   }
 
-  if (fsquota_engine == FALSE) {
-    return 0;
-  }
-
-  fsquota_pool = make_sub_pool(session.pool);
-  pr_pool_tag(fsquota_pool, MOD_FSQUOTA_VERSION);
-
   return 0;
 }
 
@@ -88,7 +78,6 @@ static int fsquota_sess_init(void) {
 
 static conftable fsquota_conftab[] = {
   { "FSQuotaEngine",	set_fsquotaengine,	NULL },
-  { "FSQuotaOptions",	set_fsquotaoptions,	NULL },
   { NULL }
 };
 

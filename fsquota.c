@@ -25,6 +25,8 @@
 #include "mod_fsquota.h"
 #include "fsquota.h"
 
+static const char *trace_channel = "fsquota";
+
 #if defined(LINUX)
 static int linux_user_enabled(const char *path, uid_t uid, int *enabled) {
   int res = -1;
@@ -74,7 +76,7 @@ static int linux_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
 
     if (dq.dqb_valid & QIF_INODES) {
       *file_avail = (uint64_t) dq.dqb_isoftlimit;
-      *file_used = (uin64_t) dq.dqb_curinodes;
+      *file_used = (uint64_t) dq.dqb_curinodes;
     }
 
   } else {
@@ -138,7 +140,7 @@ static int linux_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
 
     if (dq.dqb_valid & QIF_INODES) {
       *file_avail = (uint64_t) dq.dqb_isoftlimit;
-      *file_used = (uin64_t) dq.dqb_curinodes;
+      *file_used = (uint64_t) dq.dqb_curinodes;
     }
 
   } else {
@@ -155,7 +157,7 @@ static int linux_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
 }
 #endif /* Linux */
 
-#if defined(FREEBSD7) || defined(FREEBSD8) || defined(FREEBSD9) || \ 
+#if defined(FREEBSD7) || defined(FREEBSD8) || defined(FREEBSD9) || \
     defined(FREEBSD10)
 static int freebsd_user_enabled(const char *path, uid_t uid, int *enabled) {
   errno = ENOSYS;
@@ -185,7 +187,7 @@ static int freebsd_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
     *kb_avail = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
     *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
     *file_avail = (uint64_t) dq.dqb_isoftlimit;
-    *file_used = (uin64_t) dq.dqb_curinodes;
+    *file_used = (uint64_t) dq.dqb_curinodes;
 
   } else {
     int xerrno = xerrno;
@@ -228,7 +230,7 @@ static int freebsd_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
     *kb_avail = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
     *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
     *file_avail = (uint64_t) dq.dqb_isoftlimit;
-    *file_used = (uin64_t) dq.dqb_curinodes;
+    *file_used = (uint64_t) dq.dqb_curinodes;
 
   } else {
     int xerrno = xerrno;
@@ -248,10 +250,14 @@ static int freebsd_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
 /* MacOSX */
 static int darwin_user_enabled(const char *path, uid_t uid, int *enabled) {
   int res = -1;
+  char status = 0;
 
 # ifdef Q_QUOTASTAT
-  res = quotactl(path, QCMD(Q_QUOTASTAT, USRQUOTA), uid, enabled);
-  if (res < 0) {
+  res = quotactl(path, QCMD(Q_QUOTASTAT, USRQUOTA), uid, &status);
+  if (res == 0) {
+    *enabled = status;
+
+  } else {
     int xerrno = errno;
 
     pr_trace_msg(trace_channel, 9,
@@ -272,12 +278,12 @@ static int darwin_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
   int res;
   struct dqblk dq;
 
-  res = quotactl(path, QCMD(Q_GETQUOTA, USRQUOTA), uid, &dq);
+  res = quotactl(path, QCMD(Q_GETQUOTA, USRQUOTA), uid, (void *) &dq);
   if (res == 0) {
     *kb_avail = (dq.dqb_bsoftlimit / 1024);
     *kb_used = (dq.dqb_curbytes / 1024);
     *file_avail = (uint64_t) dq.dqb_isoftlimit;
-    *file_used = (uin64_t) dq.dqb_curinodes;
+    *file_used = (uint64_t) dq.dqb_curinodes;
 
   } else {
     int xerrno = xerrno;
@@ -294,10 +300,14 @@ static int darwin_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
 
 static int darwin_group_enabled(const char *path, gid_t gid, int *enabled) {
   int res = -1;
+  char status = 0;
 
 # ifdef Q_QUOTASTAT
-  res = quotactl(path, QCMD(Q_QUOTASTAT, GRPQUOTA), gid, enabled);
-  if (res < 0) {
+  res = quotactl(path, QCMD(Q_QUOTASTAT, GRPQUOTA), gid, &status);
+  if (res == 0) {
+    *enabled = status;
+
+  } else {
     int xerrno = errno;
 
     pr_trace_msg(trace_channel, 9,
@@ -318,12 +328,12 @@ static int darwin_group_get(const char *path, gid_t gid, uint64_t *kb_avail,
   int res;
   struct dqblk dq;
 
-  res = quotactl(path, QCMD(Q_GETQUOTA, GRPQUOTA), gid, &dq);
+  res = quotactl(path, QCMD(Q_GETQUOTA, GRPQUOTA), gid, (void *) &dq);
   if (res == 0) {
     *kb_avail = (dq.dqb_bsoftlimit / 1024);
     *kb_used = (dq.dqb_curbytes / 1024);
     *file_avail = (uint64_t) dq.dqb_isoftlimit;
-    *file_used = (uin64_t) dq.dqb_curinodes;
+    *file_used = (uint64_t) dq.dqb_curinodes;
 
   } else {
     int xerrno = xerrno;
@@ -384,7 +394,7 @@ static int solaris_user_get(const char *path, uid_t uid, uint64_t *kb_avail,
     *kb_avail = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
     *kb_used = ((dq.dqb_curblocks * st.st_blksize) / 1024);
     *file_avail = (uint64_t) dq.dqb_fsoftlimit;
-    *file_used = (uin64_t) dq.dqb_curfiles;
+    *file_used = (uint64_t) dq.dqb_curfiles;
 
   } else {
     int xerrno = xerrno;
@@ -422,7 +432,7 @@ int fsquota_user_enabled(const char *path, uid_t uid, int *enabled) {
 #if defined(LINUX)
   res = linux_user_enabled(path, uid, enabled);
 
-#elif defined(FREEBSD7) || defined(FREEBSD8) || defined(FREEBSD9) || \ 
+#elif defined(FREEBSD7) || defined(FREEBSD8) || defined(FREEBSD9) || \
       defined(FREEBSD10)
   res = freebsd_user_enabled(path, uid, enabled);
 
