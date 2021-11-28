@@ -1,6 +1,6 @@
 /*
  * ProFTPD - mod_fsquota implementations
- * Copyright (c) 2013 TJ Saunders
+ * Copyright (c) 2013-2021 TJ Saunders
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,16 +51,16 @@ static int linux_user_enabled(const char *path, uid_t uid, int *enabled) {
 
 static int linux_user_get(const char *path, uid_t uid, uint64_t *kb_total,
     uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
-  int res;
+  int res, xerrno;
   struct stat st;
   struct dqblk dq;
 
   /* We need to stat the directory, in order to find out the block size. */
   res = stat(path, &st);
-  if (res < 0) {
-    int xerrno = errno;
+  xerrno = errno;
 
-    pr_trace_channel(trace_channel, 7,
+  if (res < 0) {
+    pr_trace_msg(trace_channel, 7,
       "stat(2) error on '%s': %s", path, strerror(xerrno));
 
     errno = xerrno;
@@ -68,6 +68,8 @@ static int linux_user_get(const char *path, uid_t uid, uint64_t *kb_total,
   }
 
   res = quotactl(QCMD(Q_GETQUOTA, USRQUOTA), path, uid, &dq);
+  xerrno = errno;
+
   if (res == 0) {
     if (dq.dqb_valid & QIF_BLIMITS) {
       if (kb_total != NULL) {
@@ -90,8 +92,6 @@ static int linux_user_get(const char *path, uid_t uid, uint64_t *kb_total,
     }
 
   } else {
-    int xerrno = xerrno;
-
     pr_trace_msg(trace_channel, 9,
       "Linux: error obtaining user quotas for UID %lu, path '%s': %s",
       (unsigned long) uid, path, strerror(xerrno));
@@ -125,16 +125,16 @@ static int linux_group_enabled(const char *path, gid_t gid, int *enabled) {
 
 static int linux_group_get(const char *path, gid_t gid, uint64_t *kb_total,
     uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
-  int res;
+  int res, xerrno;
   struct stat st;
   struct dqblk dq;
 
   /* We need to stat the directory, in order to find out the block size. */
   res = stat(path, &st);
-  if (res < 0) {
-    int xerrno = errno;
+  xerrno = errno;
 
-    pr_trace_channel(trace_channel, 7,
+  if (res < 0) {
+    pr_trace_msg(trace_channel, 7,
       "stat(2) error on '%s': %s", path, strerror(xerrno));
 
     errno = xerrno;
@@ -142,6 +142,8 @@ static int linux_group_get(const char *path, gid_t gid, uint64_t *kb_total,
   }
 
   res = quotactl(QCMD(Q_GETQUOTA, GRPQUOTA), path, gid, &dq);
+  xerrno = errno;
+
   if (res == 0) {
     if (dq.dqb_valid & QIF_BLIMITS) {
       if (kb_total != NULL) {
@@ -164,8 +166,6 @@ static int linux_group_get(const char *path, gid_t gid, uint64_t *kb_total,
     }
 
   } else {
-    int xerrno = xerrno;
-
     pr_trace_msg(trace_channel, 9,
       "Linux: error obtaining group quotas for GID %lu, path '%s': %s",
       (unsigned long) gid, path, strerror(xerrno));
@@ -186,16 +186,14 @@ static int freebsd_user_enabled(const char *path, uid_t uid, int *enabled) {
 
 static int freebsd_user_get(const char *path, uid_t uid, uint64_t *kb_total,
     uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
-  int res;
+  int res, xerrno;
   struct stat st;
   struct dqblk dq;
 
   /* We need to stat the directory, in order to find out the block size. */
   res = stat(path, &st);
   if (res < 0) {
-    int xerrno = errno;
-
-    pr_trace_channel(trace_channel, 7,
+    pr_trace_msg(trace_channel, 7,
       "stat(2) error on '%s': %s", path, strerror(xerrno));
 
     errno = xerrno;
@@ -203,6 +201,8 @@ static int freebsd_user_get(const char *path, uid_t uid, uint64_t *kb_total,
   }
 
   res = quotactl(path, QCMD(Q_GETQUOTA, USRQUOTA), uid, &dq);
+  xerrno = errno;
+
   if (res == 0) {
     if (kb_total != NULL) {
       *kb_total = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
@@ -221,8 +221,6 @@ static int freebsd_user_get(const char *path, uid_t uid, uint64_t *kb_total,
     }
 
   } else {
-    int xerrno = xerrno;
-
     pr_trace_msg(trace_channel, 9,
       "FreeBSD: error obtaining user quotas for UID %lu, path '%s': %s",
       (unsigned long) uid, path, strerror(xerrno));
@@ -240,16 +238,16 @@ static int freebsd_group_enabled(const char *path, gid_t gid, int *enabled) {
 
 static int freebsd_group_get(const char *path, gid_t gid, uint64_t *kb_total,
     uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
-  int res;
+  int res, xerrno;
   struct stat st;
   struct dqblk dq;
 
   /* We need to stat the directory, in order to find out the block size. */
   res = stat(path, &st);
-  if (res < 0) {
-    int xerrno = errno;
+  xerrno = errno;
 
-    pr_trace_channel(trace_channel, 7,
+  if (res < 0) {
+    pr_trace_msg(trace_channel, 7,
       "stat(2) error on '%s': %s", path, strerror(xerrno));
 
     errno = xerrno;
@@ -257,6 +255,8 @@ static int freebsd_group_get(const char *path, gid_t gid, uint64_t *kb_total,
   }
 
   res = quotactl(path, QCMD(Q_GETQUOTA, GRPQUOTA), gid, &dq);
+  xerrno = errno;
+
   if (res == 0) {
     if (kb_total != NULL) {
       *kb_total = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
@@ -275,8 +275,6 @@ static int freebsd_group_get(const char *path, gid_t gid, uint64_t *kb_total,
     }
 
   } else {
-    int xerrno = xerrno;
-
     pr_trace_msg(trace_channel, 9,
       "FreeBSD: error obtaining group quotas for GID %lu, path '%s': %s",
       (unsigned long) gid, path, strerror(xerrno));
@@ -317,10 +315,12 @@ static int darwin_user_enabled(const char *path, uid_t uid, int *enabled) {
 
 static int darwin_user_get(const char *path, uid_t uid, uint64_t *kb_total,
     uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
-  int res;
+  int res, xerrno;
   struct dqblk dq;
 
   res = quotactl(path, QCMD(Q_GETQUOTA, USRQUOTA), uid, (void *) &dq);
+  xerrno = errno;
+
   if (res == 0) {
     if (kb_total != NULL) {
       *kb_total = (dq.dqb_bsoftlimit / 1024);
@@ -339,8 +339,6 @@ static int darwin_user_get(const char *path, uid_t uid, uint64_t *kb_total,
     }
 
   } else {
-    int xerrno = xerrno;
-
     pr_trace_msg(trace_channel, 9,
       "Linux: error obtaining user quotas for UID %lu, path '%s': %s",
       (unsigned long) uid, path, strerror(xerrno));
@@ -378,10 +376,12 @@ static int darwin_group_enabled(const char *path, gid_t gid, int *enabled) {
 
 static int darwin_group_get(const char *path, gid_t gid, uint64_t *kb_total,
     uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
-  int res;
+  int res, xerrno;
   struct dqblk dq;
 
   res = quotactl(path, QCMD(Q_GETQUOTA, GRPQUOTA), gid, (void *) &dq);
+  xerrno = errno;
+
   if (res == 0) {
     if (kb_total != NULL) {
       *kb_total = (dq.dqb_bsoftlimit / 1024);
@@ -400,8 +400,6 @@ static int darwin_group_get(const char *path, gid_t gid, uint64_t *kb_total,
     }
 
   } else {
-    int xerrno = xerrno;
-
     pr_trace_msg(trace_channel, 9,
       "Linux: error obtaining group quotas for GID %lu, path '%s': %s",
       (unsigned long) gid, path, strerror(xerrno));
@@ -421,15 +419,15 @@ static int solaris_user_enabled(const char *path, uid_t uid, int *enabled) {
 
 static int solaris_user_get(const char *path, uid_t uid, uint64_t *kb_total,
     uint64_t *kb_used, uint64_t *file_total, uint64_t *file_used) {
-  int res, fd;
+  int res, fd, xerrno;
   struct stat st;
   struct dqblk dq;
   struct quotctl qctl;
 
   fd = open(path, O_RDONLY);
-  if (fd < 0) {
-    int xerrno = errno;
+  xerrno = errno;
 
+  if (fd < 0) {
     pr_trace_msg(trace_channel, 3,
       "unable to open '%s': %s", path, strerror(xerrno));
 
@@ -438,9 +436,9 @@ static int solaris_user_get(const char *path, uid_t uid, uint64_t *kb_total,
   }
 
   res = fstat(fd, &st);
-  if (res < 0) {
-    int xerrno = errno;
+  xerrno = errno;
 
+  if (res < 0) {
     pr_trace_msg(trace_channel, 5,
       "fstat(2) error for '%s' (fd %d): %s", path, fd, strerror(xerrno));
 
@@ -454,6 +452,8 @@ static int solaris_user_get(const char *path, uid_t uid, uint64_t *kb_total,
   qctl.addr = (void *) &dq;
 
   res = ioctl(fd, Q_QUOTACTL, &qctl);
+  xerrno = errno;
+
   if (res == 0) {
     if (kb_total != NULL) {
       *kb_total = ((dq.dqb_bsoftlimit * st.st_blksize) / 1024);
@@ -472,8 +472,6 @@ static int solaris_user_get(const char *path, uid_t uid, uint64_t *kb_total,
     }
 
   } else {
-    int xerrno = xerrno;
-
     pr_trace_msg(trace_channel, 9,
       "Solaris: error obtaining user quotas for UID %lu, path '%s': %s",
       (unsigned long) uid, path, strerror(xerrno));
